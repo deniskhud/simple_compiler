@@ -3,8 +3,12 @@
 #include <cstdlib>
 #include <string>
 using namespace std;
+
+
 void Expression();
+void Identificator();
 char Look;  // Lookahead character
+const char CR = '\n';
 
 // Get a new symbol
 void GetChar() {
@@ -74,17 +78,34 @@ void EmitLn(const string& s) {
     cout << endl;
 }
 
+//Parse and Translate a Math Factor
 void Factor() {
     if (Look == '(') {
         Match('(');
         Expression();
         Match(')');
     }
+
+    else if (IsAlpha(Look)) {
+        Identificator();
+    }
     else {
         char num = GetNum();
         EmitLn("MOVE #" + string(1, num) + ",D0");
     }
-    
+}
+
+void Identificator() {
+    char name = GetName();
+    if (Look == '(') {
+        Match('(');
+        Match(')');
+        EmitLn("BSR " + string(1, name));
+    }
+    else {
+        EmitLn("MOVE " + string(1, name) + "(PC),D0");
+    }
+
 }
 
 void Multiply() {
@@ -156,8 +177,15 @@ void Expression() {
             break;
         }
     }
-    
+}
+//assignment function
+void Assignment() {
+    char name = GetName();
 
+    Match('=');
+    Expression();
+    EmitLn("LEA " + string(1, name) + "(PC),A0");
+    EmitLn("MOVE D0,(A0)");
     
 }
 
@@ -168,7 +196,8 @@ void Init() {
 
 int main() {
     Init();
-    Expression();
+    
+    if (Look != '\n') Expected("NewLine");
     return 0;
 }
 
