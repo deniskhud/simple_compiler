@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <string>
 using namespace std;
-
+void Expression();
 char Look;  // Lookahead character
 
 // Get a new symbol
@@ -75,8 +75,16 @@ void EmitLn(const string& s) {
 }
 
 void Factor() {
-    char num = GetNum();
-    EmitLn("MOVE #" + string(1, num) + ",D0");
+    if (Look == '(') {
+        Match('(');
+        Expression();
+        Match(')');
+    }
+    else {
+        char num = GetNum();
+        EmitLn("MOVE #" + string(1, num) + ",D0");
+    }
+    
 }
 
 void Multiply() {
@@ -121,9 +129,20 @@ void Subtract() {
     EmitLn("NEG D0");
 }
 
+bool isAddop(char ch) {
+    return ch == '+' || ch == '-';
+}
+
+//Parse and Translate an Expression
 void Expression() {
-    Term();
-    while (Look == '+' || Look == '-') {
+    if (isAddop(Look)) {
+        EmitLn("CLR D0");
+    }
+    else {
+        Term();
+    }
+    
+    while(isAddop(Look)) {
         EmitLn("MOVE D0,-(SP)");
         switch (Look) {
         case '+':
