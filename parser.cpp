@@ -7,8 +7,10 @@ using namespace std;
 
 void Expression();
 void Identificator();
+bool isSpace(char c);
+void skipSpace();
 char Look;  // Lookahead character
-const char CR = '\n';
+
 
 // Get a new symbol
 void GetChar() {
@@ -31,13 +33,7 @@ void Expected(const string& s) {
     Abort(s + " expected");
 }
 
-// Character Matching
-void Match(char x) {
-    if (Look == x)
-        GetChar();
-    else
-        Expected("'" + string(1, x) + "'");
-}
+
 
 // Checking for the letter
 bool IsAlpha(char c) {
@@ -49,22 +45,58 @@ bool IsDigit(char c) {
     return isdigit(static_cast<unsigned char>(c));
 }
 
-// Get a name (letter)
-char GetName() {
+
+bool isAlNum(char c) {
+    return IsAlpha(c) || IsDigit(c);
+}
+
+bool isSpace(char c) {
+    return c == ' ' || c == '\t';
+}
+
+//a function skip space
+void skipSpace() {
+    while (isSpace(Look)) {
+        GetChar();
+    }
+}
+
+// Character Matching
+void Match(char x) {
+    if (Look != x) Expected("'" + string(1, x) + "'");
+    else {
+        GetChar();
+        skipSpace();
+    }
+        
+}
+
+// Get a name 
+string GetName() {
+    string token = "";
     if (!IsAlpha(Look))
         Expected("Name");
-    char name = toupper(Look);
-    GetChar();
-    return name;
+    while (isAlNum(Look)) {
+        token += toupper(Look);
+        GetChar();
+    }
+    skipSpace();
+    return token;
+    
 }
 
 // Get a number
-char GetNum() {
+string GetNum() {
+    string value;
     if (!IsDigit(Look))
         Expected("Integer");
-    char num = Look;
-    GetChar();
-    return num;
+    while (IsDigit(Look)) {
+        value += Look;
+        GetChar();
+    }
+    skipSpace();
+    return value;
+    
 }
 
 // Printing an indented line
@@ -90,20 +122,20 @@ void Factor() {
         Identificator();
     }
     else {
-        char num = GetNum();
-        EmitLn("MOVE #" + string(1, num) + ",D0");
+        string num = GetNum();
+        EmitLn("MOVE #" + num + ",D0");
     }
 }
 
 void Identificator() {
-    char name = GetName();
+    string name = GetName();
     if (Look == '(') {
         Match('(');
         Match(')');
-        EmitLn("BSR " + string(1, name));
+        EmitLn("BSR " + name);
     }
     else {
-        EmitLn("MOVE " + string(1, name) + "(PC),D0");
+        EmitLn("MOVE " + name + "(PC),D0");
     }
 
 }
@@ -180,11 +212,11 @@ void Expression() {
 }
 //assignment function
 void Assignment() {
-    char name = GetName();
+    string name = GetName();
 
     Match('=');
     Expression();
-    EmitLn("LEA " + string(1, name) + "(PC),A0");
+    EmitLn("LEA " + name + "(PC),A0");
     EmitLn("MOVE D0,(A0)");
     
 }
@@ -192,11 +224,12 @@ void Assignment() {
 // Initialization
 void Init() {
     GetChar();
+    skipSpace();
 }
 
 int main() {
     Init();
-    
+    Expression();
     if (Look != '\n') Expected("NewLine");
     return 0;
 }
